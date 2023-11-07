@@ -3,6 +3,8 @@
 # auto-git-push.sh
 #
 # A utility script to manage auto-commit and auto-push of local repositories
+# Add this script to your cron and you're good to go!
+#
 # A good use case is if you want to automatically update a remote repo
 # Another is if you want to backup a local repo
 #

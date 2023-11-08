@@ -26,6 +26,22 @@ logger_func() {
   echo "auto-git-push: $timestamp_for_commit: $log_message" | tee -a "$log_file"
 }
 
+cron_split() {
+  local cron_string="$1"
+
+  # see https://crontab.guru/ for visual guide of cron syntax
+  minute=$(echo $cron_string | awk -F':' '{print $1}')
+  hour=$(echo $cron_string | awk -F':' '{print $2}')
+  day_month=$(echo $cron_string | awk -F':' '{print $3}')
+  month=$(echo $cron_string | awk -F':' '{print $4}')
+  day_week=$(echo $cron_string | awk -F':' '{print $5}')
+
+  current_datetime=$(date +"%M %H %d %m %u")
+
+  # TODO: apply cron expression parsing logic
+  #   see crontab.guru
+}
+
 while
 do
   logger_func " log in /var/log/auto-git-push"

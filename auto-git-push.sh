@@ -21,7 +21,8 @@
 
 logger_func() {
   local log_message="$1"
-  log_file="/var/log/auto-git-push.log"
+  log_file=~/auto-git-push.log
+  test -f $log_file || touch $log_file
   timestamp_for_commit=$(date +"%Y-%m-%dT%H:%M:%S%:z")
   echo "auto-git-push: $timestamp_for_commit: $log_message" | tee -a "$log_file"
 }
@@ -42,21 +43,21 @@ cron_split() {
   #   see crontab.guru
 }
 
-while
+while true
 do
-  logger_func " log in /var/log/auto-git-push"
+  logger_func "log in /var/log/auto-git-push"
 
-  logger_func  Welcome to auto-git-push
-  logger_func  Checking if 'jq' command is installed...
+  logger_func  "Welcome to auto-git-push"
+  logger_func  "Checking if 'jq' command is installed..."
 
   # this script uses jq
   #   hence, the command check
   #
   if type -P jq
   then
-    logger_func  command 'jq' already exists, skipping install
+    logger_func  "command 'jq' already exists, skipping install"
   else
-    logger_func  command 'jq' does not exist, installing...
+    logger_func  "command 'jq' does not exist, installing..."
     curl -sS https://webi.sh/jq | bash
   fi
 
@@ -65,9 +66,9 @@ do
   #   'hwd' means 'home working directory' (??)
   #
   hwd=$(pwd)
-  logger_func " hwd is: $hwd"
+  logger_func "hwd is: $hwd"
 
-  logger_func " loop about to start for reading the items inside auto-git-push.json..."
+  logger_func "loop about to start for reading the items inside auto-git-push.json..."
   ctr=0
   jq -c '.repos.[]' auto-git-push.json | while read line; do
     
@@ -76,58 +77,58 @@ do
     # path field check:
     #   the item is skipped if path is empty
     #
-    path=$(logger_func $line | jq -r ".path")
+    path=$(echo $line | jq -r ".path")
     if [ "$path" == "null" ] || [ "$path" == "" ]
     then
-      logger_func " Element: $ctr, path is: null or empty, hence skipping this item..."
+      logger_func "Element: $ctr, path is: null or empty, hence skipping this item..."
       continue
     elif [ "$path" == "$hwd" ]
     then
       # protect the hwd,
       #   the git repo where this script is running is prohibited from modifications
-      logger_func " Element: $ctr, path is: $path which is the same as hwd, hence skipping this item..."
+      logger_func "Element: $ctr, path is: $path which is the same as hwd, hence skipping this item..."
       continue
     else
-      logger_func " Element: $ctr, path is: $path"
+      logger_func "Element: $ctr, path is: $path"
       cd "$path"
-      logger_func " Element: $ctr, pwd is: $(pwd)"
+      logger_func "Element: $ctr, pwd is: $(pwd)"
     fi
 
     # commit_msg check
     #
-    commit_msg=$(logger_func $line | jq -r ".commit_msg")
+    commit_msg=$(echo $line | jq -r ".commit_msg")
     if [ "$commit_msg" == "null" ] || [ "$commit_msg" == "" ]
     then
-      logger_func " Element: $ctr, commit_msg is: null or empty"
+      logger_func "Element: $ctr, commit_msg is: null or empty"
     else
-      logger_func " Element: $ctr, commit_msg is: $commit_msg"
+      logger_func "Element: $ctr, commit_msg is: $commit_msg"
     fi
 
-    logger_func  Element: $ctr, Commit Message: $commit_msg
+    logger_func "Element: $ctr, Commit Message: $commit_msg"
     
     timestamp_for_commit=$(date +"%Y-%m-%dT%H:%M:%S%:z")
-    logger_func " Element: $ctr, timestamp is: $timestamp_for_commit"
+    logger_func "Element: $ctr, timestamp is: $timestamp_for_commit"
 
     # remote field check
     #
-    remote=$(logger_func $line | jq -r ".remote")
+    remote=$(echo $line | jq -r ".remote")
     if [ "$remote" == "null" ] || [ "$remote" == "" ]
     then
-      logger_func " Element: $ctr, remote is: null or empty, hence skipping this item.."
+      logger_func "Element: $ctr, remote is: null or empty, hence skipping this item.."
       continue
     else
-      logger_func " Element: $ctr, remote is: $remote"
+      logger_func "Element: $ctr, remote is: $remote"
     fi
 
     # branch field check
     #
-    branch=$(logger_func $line | jq -r ".branch")
+    branch=$(echo $line | jq -r ".branch")
     if [ "$branch" == "null" ] || [ "$branch" == "" ]
     then
-      logger_func " Element: $ctr, branch is: null or empty, hence skipping this item.."
+      logger_func "Element: $ctr, branch is: null or empty, hence skipping this item.."
       continue
     else
-      logger_func " Element: $ctr, branch is: $branch"
+      logger_func "Element: $ctr, branch is: $branch"
     fi
 
     # git add, git commit and git push execution
@@ -138,11 +139,11 @@ do
     eval "git add . && git commit -m '${commit_msg} ${timestamp}' && git push ${remote} ${branch}"
 
     cd $hwd
-    logger_func " Element: $ctr, went back to hwd, hence pwd is: $(pwd)"
+    logger_func "Element: $ctr, went back to hwd, hence pwd is: $(pwd)"
 
     ((ctr++))
 
   done
 
-  sleep 1
+  sleep 10
 done
